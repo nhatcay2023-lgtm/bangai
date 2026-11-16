@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "UserBoard": {
+      "title": "UserBoard",
+      "description": "A synchronized chalkboard workspace belonging to a specific user, storing theme, grid ruling, chalk strokes, and placed visual diagrams or notes.",
+      "type": "object",
+      "properties": {
+        "boardId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique identifier for the board."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the board owner."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Human-readable title of the lesson or study board."
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["green", "black", "navy", "paper"],
+          "description": "Board surface theme."
+        },
+        "gridType": {
+          "type": "string",
+          "enum": ["none", "square", "lined", "axes"],
+          "description": "Background ruling or coordinate grid mode."
+        },
+        "strokes": {
+          "type": "array",
+          "description": "Bounded array of drawn chalk, highlighter, or line strokes."
+        },
+        "items": {
+          "type": "array",
+          "description": "Bounded array of diagrams and highlighted note cards placed on the board."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the board was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last board synchronization."
+        }
+      },
+      "required": [
+        "boardId",
+        "ownerId",
+        "title",
+        "theme",
+        "gridType",
+        "strokes",
+        "items",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/boards/{boardId}": {
+      "schema": {
+        "$ref": "#/entities/UserBoard"
+      },
+      "description": "User-owned synchronized chalkboard documents."
+    }
+  }
+}

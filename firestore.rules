@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.uid == userId;
+    }
+
+    function isValidUserBoard(data, userId, boardId) {
+      return data.keys().hasAll([
+          'boardId',
+          'ownerId',
+          'title',
+          'theme',
+          'gridType',
+          'strokes',
+          'items',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'boardId',
+          'ownerId',
+          'title',
+          'theme',
+          'gridType',
+          'strokes',
+          'items',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.boardId)
+        && data.boardId == boardId
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 120
+        && data.theme is string
+        && data.theme in ['green', 'black', 'navy', 'paper']
+        && data.gridType is string
+        && data.gridType in ['none', 'square', 'lined', 'axes']
+        && data.strokes is list
+        && data.strokes.size() <= 800
+        && (data.strokes.size() == 0 || data.strokes[0] is map)
+        && data.items is list
+        && data.items.size() <= 100
+        && (data.items.size() == 0 || data.items[0] is map)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId}/boards/{boardId} {
+      allow get: if isValidId(userId)
+        && isValidId(boardId)
+        && isSignedIn()
+        && request.auth.uid == userId
+        && (resource == null || resource.data.ownerId == request.auth.uid);
+
+      allow list: if isSignedIn()
+        && request.auth.uid == userId
+        && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isValidId(userId)
+        && isValidId(boardId)
+        && isVerifiedOwner(userId)
+        && isValidUserBoard(incoming(), userId, boardId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isValidId(boardId)
+        && isVerifiedOwner(userId)
+        && isValidUserBoard(incoming(), userId, boardId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().boardId == existing().boardId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['theme', 'gridType', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['strokes', 'items', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['strokes', 'items', 'theme', 'gridType', 'title', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(userId)
+        && isValidId(boardId)
+        && isVerifiedOwner(userId)
+        && existing().ownerId == request.auth.uid;
+    }
+  }
+}

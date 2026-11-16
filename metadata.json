@@ -1,0 +1,8 @@
+{
+  "name": "Bảng Phấn AI - Smart Chalkboard",
+  "description": "Bảng viết phấn thông minh tích hợp trợ lý AI giải toán, kéo thả hình vẽ trực quan, kẻ ô lưới luyện chữ và đồng bộ đa thiết bị.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
